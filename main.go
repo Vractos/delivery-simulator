@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Vractos/delivery-simulator/application/route"
+	kafka2 "github.com/Vractos/delivery-simulator/application/kafka"
+	"github.com/Vractos/delivery-simulator/infra/kafka"
+	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/joho/godotenv"
 )
 
@@ -16,12 +18,12 @@ func init() {
 }
 
 func main() {
-	route := route.Route{
-		ID:       "1",
-		ClientID: "1",
-	}
+	msgChan := make(chan *ckafka.Message)
+	consumer := kafka.NewKafkaConsumer(msgChan)
+	go consumer.Consume()
 
-	route.LoadPositions()
-	stringJson, _ := route.ExportJsonPosition()
-	fmt.Println(stringJson[1])
+	for msg := range msgChan {
+		fmt.Println(string(msg.Value))
+		go kafka2.Produce(msg)
+	}
 }
